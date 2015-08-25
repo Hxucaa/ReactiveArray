@@ -23,6 +23,7 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   s.source_files = 'ReactiveArray/**/*'
+  s.exclude_files = 'ReactiveArray/Info.plist'  
   # s.resource_bundles = {
   #  'XAssets' => ['Pod/Assets/*.png']
   # }
