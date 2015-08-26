@@ -12,21 +12,39 @@ import ReactiveArray
 import ReactiveCocoa
 import Box
 
-private func waitForOperation<T>(fromProducer producer: SignalProducer<Operation<T>, NoError>,
+private func waitForOperation<T>(
+    fromProducer producer: SignalProducer<Operation<T>, NoError>,
     #when: () -> (),
-    onAppend: Box<T> -> () = { fail("Invalid operation type: .Append(\($0))") },
-    onInsert: (Box<T>, Int) -> () = { fail("Invalid operation type: .Insert(\($0), \($1.value))") },
-    onDelete: Int -> () = { fail("Invalid operation type: .Delete(\($0))") }) {
+    onAppend: Box<T> -> () = {
+        fail("Invalid operation type: .Append(\($0))")
+    },
+    onInsert: (Box<T>, Int) -> () = {
+        fail("Invalid operation type: .Insert(\($0), \($1.value))")
+    },
+    onDelete: Int -> () = {
+        fail("Invalid operation type: .Delete(\($0))")
+    },
+    onReplaceAll: Box<[T]> -> () = {
+        fail("Invalid operation type: .ReplaceAll(\($0))")
+    },
+    onRemoveAll: Bool -> () = {
+        fail("Invalid operation type: .RemoveAll(\($0))")
+    }
+    ) {
         
         waitUntil { done in
             producer |> start(next: { operation in
                 switch operation {
-                case .Append(let boxedValue):
+                case let .Append(boxedValue):
                     onAppend(boxedValue)
-                case .Insert(let boxedValue, let index):
+                case let .Insert(boxedValue, index):
                     onInsert(boxedValue, index)
-                case .RemoveElement(let index):
+                case let .RemoveElement(index):
                     onDelete(index)
+                case let .ReplaceAll(boxedValues):
+                    onReplaceAll(boxedValues)
+                case let .RemoveAll(keepCapacity):
+                    onRemoveAll(keepCapacity)
                 }
                 done()
             })
@@ -35,33 +53,62 @@ private func waitForOperation<T>(fromProducer producer: SignalProducer<Operation
         
 }
 
-private func waitForOperation<T>(fromSignal signal: Signal<Operation<T>, NoError>,
+private func waitForOperation<T>(
+    fromSignal signal: Signal<Operation<T>, NoError>,
     #when: () -> (),
-    onAppend: Box<T> -> () = { fail("Invalid operation type: .Append(\($0))") },
-    onInsert: (Box<T>, Int) -> () = { fail("Invalid operation type: .Insert(\($0), \($1.value))") },
-    onDelete: Int -> () = { fail("Invalid operation type: .Delete(\($0))") }) {
+    onAppend: Box<T> -> () = {
+        fail("Invalid operation type: .Append(\($0))")
+    },
+    onInsert: (Box<T>, Int) -> () = {
+        fail("Invalid operation type: .Insert(\($0), \($1.value))")
+    },
+    onDelete: Int -> () = {
+        fail("Invalid operation type: .Delete(\($0))")
+    },
+    onReplaceAll: Box<[T]> -> () = {
+        fail("Invalid operation type: .ReplaceAll(\($0))")
+    },
+    onRemoveAll: Bool -> () = {
+        fail("Invalid operation type: .RemoveAll(\($0))")
+    }
+    ) {
         
-    let producer = SignalProducer<Operation<T>, NoError> { (observer, disposable) in signal.observe(observer) }
-    waitForOperation(fromProducer: producer, when: when, onAppend: onAppend, onInsert: onInsert, onDelete: onDelete)
+        let producer = SignalProducer<Operation<T>, NoError> { (observer, disposable) in signal.observe(observer) }
+        waitForOperation(fromProducer: producer, when: when, onAppend: onAppend, onInsert: onInsert, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
 }
 
-private func waitForOperation<T>(fromArray array: ReactiveArray<T>,
+private func waitForOperation<T>(
+    fromArray array: ReactiveArray<T>,
     #when: () -> (),
-    onAppend: Box<T> -> () = { fail("Invalid operation type: .Append(\($0))") },
-    onInsert: (Box<T>, Int) -> () = { fail("Invalid operation type: .Insert(\($0), \($1.value))") },
-    onDelete: Int -> () = { fail("Invalid operation type: .Delete(\($0))") }) {
+    onAppend: Box<T> -> () = {
+        fail("Invalid operation type: .Append(\($0))")
+    },
+    onInsert: (Box<T>, Int) -> () = {
+        fail("Invalid operation type: .Insert(\($0), \($1.value))")
+    },
+    onDelete: Int -> () = {
+        fail("Invalid operation type: .Delete(\($0))")
+    },
+    onReplaceAll: Box<[T]> -> () = {
+        fail("Invalid operation type: .ReplaceAll(\($0))")
+    },
+    onRemoveAll: Bool -> () = {
+        fail("Invalid operation type: .RemoveAll(\($0))")
+    }
+    ) {
         
-    waitForOperation(fromSignal: array.signal, when: when, onAppend: onAppend, onInsert: onInsert, onDelete: onDelete)
+        waitForOperation(fromSignal: array.signal, when: when, onAppend: onAppend, onInsert: onInsert, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
 }
 
 class ReactiveArraySpec: QuickSpec {
     
     override func spec() {
         
+        let originalData = [1,2,3,4]
         var array: ReactiveArray<Int>!
         
         beforeEach {
-            array = ReactiveArray(elements: [1,2,3,4])
+            array = ReactiveArray(elements: originalData)
         }
         
         describe("#append") {
@@ -152,8 +199,86 @@ class ReactiveArraySpec: QuickSpec {
                     }
                 )
             }
-
+        }
+        
+        describe("#replaceAll") {
             
+            let data = [1,3,5,7,9]
+            
+            it("should replace the element with a new array of data") {
+                array.replaceAll(data)
+                
+                expect(array.toArray()).to(equal(data))
+            }
+            
+            it("should signal a `ReplaceAll` opearation") {
+                waitForOperation(
+                    fromArray: array,
+                    when: {
+                        array.replaceAll(data)
+                    },
+                    onReplaceAll: { boxedValues in
+                        expect(boxedValues.value).to(equal(data))
+                        expect(boxedValues.value).toNot(equal(originalData))
+                    }
+                )
+            }
+        }
+        
+        describe("#removeAll") {
+            
+            let removeOp = { (keepCapacity: Bool) in
+                waitUntil { done in
+                    let countBeforeOperation = array.count
+                    
+                    array.observableCount.producer
+                        |> take(2)
+                        |> collect
+                        |> start(next: { counts in
+                            expect(counts).to(equal([countBeforeOperation, 0]))
+                            done()
+                        })
+                    
+                    array.removeAll(keepCapacity)
+                }
+            }
+            
+            context("when `keepCapacity` is set to `true`") {
+                
+                it("should remove all elements in the array") {
+                    removeOp(true)
+                }
+                
+                it("should signal a `RemoveAll` operation") {
+                    waitForOperation(
+                        fromArray: array,
+                        when: {
+                            array.removeAll(true)
+                        },
+                        onRemoveAll: { keepCapacity in
+                            expect(keepCapacity).to(equal(true))
+                        }
+                    )
+                }
+            }
+            
+            context("when `keepCapacity` is set to `false`") {
+                it("should remove all elements in the array") {
+                    removeOp(false)
+                }
+                
+                it("should signal a `RemoveAll` operation") {
+                    waitForOperation(
+                        fromArray: array,
+                        when: {
+                            array.removeAll(false)
+                        },
+                        onRemoveAll: { keepCapacity in
+                            expect(keepCapacity).to(equal(false))
+                        }
+                    )
+                }
+            }
         }
         
         describe("#[]") {
@@ -161,7 +286,6 @@ class ReactiveArraySpec: QuickSpec {
             it("returns the element at the given position") {
                 expect(array[2]).to(equal(3))
             }
-            
         }
         
         describe("#[]=") {
@@ -396,7 +520,7 @@ class ReactiveArraySpec: QuickSpec {
             
             beforeEach {
                 countBeforeOperation = array.count
-                producer = array.observableCount.producer |> skip(1)
+                producer = array.observableCount.producer
             }
             
             context("when an insert operation is executed") {
@@ -404,10 +528,10 @@ class ReactiveArraySpec: QuickSpec {
                 it("does not update the count") {
                     waitUntil { done in
                         producer
-                            |> take(1)
+                            |> take(2)
                             |> collect
                             |> start(next: { counts in
-                                expect(counts).to(equal([countBeforeOperation + 1]))
+                                expect(counts).to(equal([countBeforeOperation, countBeforeOperation + 1]))
                                 done()
                             })
                         
@@ -423,7 +547,9 @@ class ReactiveArraySpec: QuickSpec {
                 
                 it("updates the count") {
                     waitUntil { done in
-                        producer |> start(next: { count in
+                        producer
+                            |> skip(1)
+                            |> start(next: { count in
                             expect(count).to(equal(countBeforeOperation + 1))
                             done()
                         })
@@ -438,7 +564,9 @@ class ReactiveArraySpec: QuickSpec {
                 
                 it("updates the count") {
                     waitUntil { done in
-                        producer |> start(next: { count in
+                        producer
+                            |> skip(1)
+                            |> start(next: { count in
                             expect(count).to(equal(countBeforeOperation - 1))
                             done()
                         })
@@ -474,7 +602,7 @@ class ReactiveArraySpec: QuickSpec {
         describe("count") {
             
             it("returns the amount of elements in the array") {
-                expect(array.count).to(equal(4))
+                expect(array.count).to(equal(originalData.count))
             }
             
         }
@@ -530,9 +658,15 @@ class ReactiveArraySpec: QuickSpec {
         describe("first") {
             
             it("returns the first element in the array") {
-                expect(array.first).to(equal(1))
+                expect(array.first).to(equal(originalData[0]))
             }
             
+            context("when the array is empty") {
+                it("should return nil") {
+                    array = ReactiveArray()
+                    expect(array.first).to(beNil())
+                }
+            }
         }
         
         describe("last") {
@@ -541,6 +675,12 @@ class ReactiveArraySpec: QuickSpec {
                 expect(array.last).to(equal(4))
             }
             
+            context("when the array is empty") {
+                it("should return nil") {
+                    array = ReactiveArray()
+                    expect(array.last).to(beNil())
+                }
+            }
         }
         
     }

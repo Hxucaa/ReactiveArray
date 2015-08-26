@@ -65,35 +65,52 @@ class OperationSpec: QuickSpec {
                 
             }
             
+            context("when the opearation is a ReplaceAll operation") {
+                
+                beforeEach {
+                    operation = Operation.ReplaceAll(values: Box([1,2,3,4]))
+                }
+                
+                it("replaces the original data with a new array") {
+                    let mappedOperation = operation.map { $0 * 2 }
+                    
+                    let areEqual = mappedOperation == Operation.ReplaceAll(values: Box([2,4,6,8]))
+                    expect(areEqual).to(beTrue())
+                }
+            }
         }
         
         describe("#value") {
         
             context("when the operation is an Append operation") {
                 
+                let data = 10
+                
                 beforeEach {
-                    operation = Operation.Append(value: Box(10))
+                    operation = Operation.Append(value: Box(data))
                 }
                 
                 it("returns the appended value") {
-                    expect(operation.value).to(equal(10))
+                    expect(operation.value).to(equal(data))
                 }
                 
             }
             
             context("when the operation is an Insert operation") {
                 
+                let data = 10
+                
                 beforeEach {
-                    operation = Operation.Insert(value: Box(10), atIndex: 5)
+                    operation = Operation.Insert(value: Box(data), atIndex: 5)
                 }
                 
                 it("returns the inserted value") {
-                    expect(operation.value).to(equal(10))
+                    expect(operation.value).to(equal(data))
                 }
                 
             }
             
-            context("when the operation is an Remove operation") {
+            context("when the operation is an RemoveElement operation") {
                 
                 beforeEach {
                     operation = Operation.RemoveElement(atIndex: 5)
@@ -105,6 +122,100 @@ class OperationSpec: QuickSpec {
                 
             }
             
+            context("when the operation is an ReplaceAll operation") {
+                
+                let array = [1,2,3,4,5]
+                
+                beforeEach {
+                    operation = Operation.ReplaceAll(values: Box(array))
+                }
+                
+                it("returns .None") {
+                    expect(operation.value).to(beNil())
+                }
+                
+            }
+            
+            context("when the operation is an RemoveAll operation") {
+                
+                beforeEach {
+                    operation = Operation.RemoveAll(keepCapacity: true)
+                }
+                
+                it("returns .None") {
+                    expect(operation.value).to(beNil())
+                }
+                
+            }
+            
+        }
+        
+        describe("#arrayValue") {
+            
+            context("when the operation is an `Append` operation") {
+                
+                let data = 10
+                
+                beforeEach {
+                    operation = Operation.Append(value: Box(data))
+                }
+                
+                it("returns .None") {
+                    expect(operation.arrayValue).to(beNil())
+                }
+                
+            }
+            
+            context("when the operation is an `Insert` operation") {
+                
+                let data = 10
+                
+                beforeEach {
+                    operation = Operation.Insert(value: Box(data), atIndex: 5)
+                }
+                
+                it("returns .None") {
+                    expect(operation.arrayValue).to(beNil())
+                }
+                
+            }
+            
+            context("when the operation is an `RemoveElement` operation") {
+                
+                beforeEach {
+                    operation = Operation.RemoveElement(atIndex: 5)
+                }
+                
+                it("returns .None") {
+                    expect(operation.arrayValue).to(beNil())
+                }
+                
+            }
+            
+            context("when the operation is an ReplaceAll operation") {
+                
+                let array = [1,2,3,4,5]
+                
+                beforeEach {
+                    operation = Operation.ReplaceAll(values: Box(array))
+                }
+                
+                it("returns the value that's going to replace all") {
+                    expect(operation.arrayValue).to(equal(array))
+                }
+            }
+            
+            context("when the operation is an RemoveAll operation") {
+                
+                beforeEach {
+                    operation = Operation.RemoveAll(keepCapacity: true)
+                }
+                
+                it("returns .None") {
+                    expect(operation.arrayValue).to(beNil())
+                }
+                
+            }
         }
         
     }

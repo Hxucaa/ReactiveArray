@@ -9,15 +9,15 @@
 
 Pod::Spec.new do |s|
   s.name             = "ReactiveArray"
-  s.version          = "0.1.1"
+  s.version          = "0.1.2"
   s.summary          = "Reactive array for ReactiveCocoa."
   s.description      = <<-DESC
-                       ReactiveArray
+                       An array class implemented in Swift that can be observed using ReactiveCocoa's Signals.
                        DESC
   s.homepage         = "https://github.com/Hxucaa/ReactiveArray"
   s.license          = 'MIT'
   s.author           = { "Lance Zhu" => "lancezhu77@gmail.com" }
-  s.source           = { :git => "git@github.com:Hxucaa/ReactiveArray.git", :tag => s.version.to_s }
+  s.source           = { :git => "https://github.com/Hxucaa/ReactiveArray.git", :tag => s.version.to_s }
 
   s.platform     = :ios, '8.0'
   s.requires_arc = true
