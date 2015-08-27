@@ -18,6 +18,9 @@ private func waitForOperation<T>(
     onAppend: Box<T> -> () = {
         fail("Invalid operation type: .Append(\($0))")
     },
+    onExtend: Box<[T]> -> () = {
+        fail("Invalid operation type: .Extend(\($0))")
+    },
     onInsert: (Box<T>, Int) -> () = {
         fail("Invalid operation type: .Insert(\($0), \($1.value))")
     },
@@ -37,6 +40,8 @@ private func waitForOperation<T>(
                 switch operation {
                 case let .Append(boxedValue):
                     onAppend(boxedValue)
+                case let .Extend(boxedValues):
+                    onExtend(boxedValues)
                 case let .Insert(boxedValue, index):
                     onInsert(boxedValue, index)
                 case let .RemoveElement(index):
@@ -59,6 +64,9 @@ private func waitForOperation<T>(
     onAppend: Box<T> -> () = {
         fail("Invalid operation type: .Append(\($0))")
     },
+    onExtend: Box<[T]> -> () = {
+        fail("Invalid operation type: .Extend(\($0))")
+    },
     onInsert: (Box<T>, Int) -> () = {
         fail("Invalid operation type: .Insert(\($0), \($1.value))")
     },
@@ -74,7 +82,7 @@ private func waitForOperation<T>(
     ) {
         
         let producer = SignalProducer<Operation<T>, NoError> { (observer, disposable) in signal.observe(observer) }
-        waitForOperation(fromProducer: producer, when: when, onAppend: onAppend, onInsert: onInsert, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
+        waitForOperation(fromProducer: producer, when: when, onAppend: onAppend, onExtend: onExtend, onInsert: onInsert, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
 }
 
 private func waitForOperation<T>(
@@ -82,6 +90,9 @@ private func waitForOperation<T>(
     #when: () -> (),
     onAppend: Box<T> -> () = {
         fail("Invalid operation type: .Append(\($0))")
+    },
+    onExtend: Box<[T]> -> () = {
+        fail("Invalid operation type: .Extend(\($0))")
     },
     onInsert: (Box<T>, Int) -> () = {
         fail("Invalid operation type: .Insert(\($0), \($1.value))")
@@ -97,17 +108,18 @@ private func waitForOperation<T>(
     }
     ) {
         
-        waitForOperation(fromSignal: array.signal, when: when, onAppend: onAppend, onInsert: onInsert, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
+        waitForOperation(fromSignal: array.signal, when: when, onAppend: onAppend, onExtend: onExtend, onInsert: onInsert, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
 }
 
 class ReactiveArraySpec: QuickSpec {
     
     override func spec() {
         
-        let originalData = [1,2,3,4]
+        var originalData: [Int]!
         var array: ReactiveArray<Int>!
         
         beforeEach {
+            originalData = [1,2,3,4]
             array = ReactiveArray(elements: originalData)
         }
         
@@ -139,6 +151,45 @@ class ReactiveArraySpec: QuickSpec {
                 )
             }
             
+        }
+        
+        describe("#extend") {
+            
+            var originalCount: Int!
+            let additionalArray = [5,6,7,8]
+            
+            beforeEach {
+                originalCount = array.count
+            }
+            
+            it("should extend the array with an additional array of elements") {
+                array.extend(additionalArray)
+                
+                var newArray = array.toArray()
+                newArray.removeRange(0...(originalCount - 1))
+                
+                expect(newArray).to(equal(additionalArray))
+            }
+            
+            it("should increment the number of elements in the array by the number of new elements") {
+                array.extend(additionalArray)
+                
+                expect(array.count).to(equal(originalCount + additionalArray.count))
+            }
+            
+            fit("should signal an `Extend` operation") {
+                waitForOperation(
+                    fromArray: array,
+                    when: {
+                        array.extend(additionalArray)
+                    },
+                    onExtend: { boxedValues in
+                        originalData.extend(additionalArray)
+                        
+                        expect(boxedValues.value).to(equal(additionalArray))
+                    }
+                )
+            }
         }
         
         describe("#insert") {
@@ -531,7 +582,7 @@ class ReactiveArraySpec: QuickSpec {
                             |> take(2)
                             |> collect
                             |> start(next: { counts in
-                                expect(counts).to(equal([countBeforeOperation, countBeforeOperation + 1]))
+                                expect(counts).to(equal([countBeforeOperation, countBeforeOperation]))
                                 done()
                             })
                         

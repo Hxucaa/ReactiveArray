@@ -35,6 +35,19 @@ class OperationSpec: QuickSpec {
                 
             }
             
+            context("when the operation is an `Extend` operation") {
+                let array = [1,2,3,4]
+                beforeEach {
+                    operation = Operation.Extend(values: Box(array))
+                }
+                it("should map the value to be extended") {
+                    let mappedOperation = operation.map { $0 * 3 }
+                    
+                    let areEqual = mappedOperation == Operation.Extend(values: Box(array.map { $0 * 3 }))
+                    expect(areEqual).to(beTrue())
+                }
+            }
+            
             context("when the operation is an Insert operation") {
                 
                 beforeEach {
@@ -96,8 +109,18 @@ class OperationSpec: QuickSpec {
                 
             }
             
-            context("when the operation is an Insert operation") {
+            context("when the operation is an `Extend` operation") {
+                let array = [1,2,3,4,5]
+                beforeEach {
+                    operation = Operation.Extend(values: Box(array))
+                }
                 
+                it("returns .None") {
+                    expect(operation.value).to(beNil())
+                }
+            }
+            
+            context("when the operation is an Insert operation") {
                 let data = 10
                 
                 beforeEach {
@@ -107,7 +130,6 @@ class OperationSpec: QuickSpec {
                 it("returns the inserted value") {
                     expect(operation.value).to(equal(data))
                 }
-                
             }
             
             context("when the operation is an RemoveElement operation") {
@@ -164,6 +186,19 @@ class OperationSpec: QuickSpec {
                     expect(operation.arrayValue).to(beNil())
                 }
                 
+            }
+            
+            context("when the operation is an `Extend` operation") {
+                
+                let array = [1,2,3,4,5]
+                
+                beforeEach {
+                    operation = Operation.Extend(values: Box(array))
+                }
+                
+                it("returns the value that's going to replace all") {
+                    expect(operation.arrayValue).to(equal(array))
+                }
             }
             
             context("when the operation is an `Insert` operation") {
