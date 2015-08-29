@@ -20,7 +20,7 @@ class OperationSpec: QuickSpec {
         
         describe("#map") {
             
-            context("when the operation is an Append operation") {
+            context("when the operation is an `Append` operation") {
                 
                 beforeEach {
                     operation = Operation.Append(value: Box(10))
@@ -48,22 +48,22 @@ class OperationSpec: QuickSpec {
                 }
             }
             
-            context("when the operation is an Insert operation") {
+            context("when the operation is an `.Replace` operation") {
                 
                 beforeEach {
-                    operation = Operation.Insert(value: Box(10), atIndex: 5)
+                    operation = Operation.Replace(value: Box(10), atIndex: 5)
                 }
                 
-                it("maps the value to be inserted") {
+                it("maps the value to be replaced") {
                     let mappedOperation = operation.map { $0 * 2 }
                     
-                    let areEqual = mappedOperation == Operation.Insert(value: Box(20), atIndex: 5)
+                    let areEqual = mappedOperation == Operation.Replace(value: Box(20), atIndex: 5)
                     expect(areEqual).to(beTrue())
                 }
                 
             }
             
-            context("when the operation is a Delete operation") {
+            context("when the operation is a `RemoveElement` operation") {
                 
                 beforeEach {
                     operation = Operation.RemoveElement(atIndex: 5)
@@ -78,7 +78,7 @@ class OperationSpec: QuickSpec {
                 
             }
             
-            context("when the opearation is a ReplaceAll operation") {
+            context("when the opearation is a `ReplaceAll` operation") {
                 
                 beforeEach {
                     operation = Operation.ReplaceAll(values: Box([1,2,3,4]))
@@ -95,7 +95,7 @@ class OperationSpec: QuickSpec {
         
         describe("#value") {
         
-            context("when the operation is an Append operation") {
+            context("when the operation is an `Append` operation") {
                 
                 let data = 10
                 
@@ -120,19 +120,19 @@ class OperationSpec: QuickSpec {
                 }
             }
             
-            context("when the operation is an Insert operation") {
+            context("when the operation is an `Replace` operation") {
                 let data = 10
                 
                 beforeEach {
-                    operation = Operation.Insert(value: Box(data), atIndex: 5)
+                    operation = Operation.Replace(value: Box(data), atIndex: 5)
                 }
                 
-                it("returns the inserted value") {
+                it("returns the replaced value") {
                     expect(operation.value).to(equal(data))
                 }
             }
             
-            context("when the operation is an RemoveElement operation") {
+            context("when the operation is an `RemoveElement` operation") {
                 
                 beforeEach {
                     operation = Operation.RemoveElement(atIndex: 5)
@@ -144,7 +144,7 @@ class OperationSpec: QuickSpec {
                 
             }
             
-            context("when the operation is an ReplaceAll operation") {
+            context("when the operation is an `ReplaceAll` operation") {
                 
                 let array = [1,2,3,4,5]
                 
@@ -201,12 +201,12 @@ class OperationSpec: QuickSpec {
                 }
             }
             
-            context("when the operation is an `Insert` operation") {
+            context("when the operation is an `Replace` operation") {
                 
                 let data = 10
                 
                 beforeEach {
-                    operation = Operation.Insert(value: Box(data), atIndex: 5)
+                    operation = Operation.Replace(value: Box(data), atIndex: 5)
                 }
                 
                 it("returns .None") {
