@@ -84,6 +84,21 @@ public final class ReactiveArray<T>: MutableCollectionType {
     }
     
     /**
+    Insert newElement at index i.
+    
+    Requires: i <= count
+    
+    Complexity: O(count).
+    
+    :param: element newElement
+    :param: index   The index i.
+    */
+    public func insert(element: T, atIndex index: Int) {
+        let operation: Operation<T> = .Insert(value: Box(element), atIndex: index)
+        sendNext(_sink, operation)
+    }
+    
+    /**
     Replace and return the element at index i with another element.
     
     :param: newElement The new element.
@@ -159,23 +174,21 @@ public final class ReactiveArray<T>: MutableCollectionType {
         switch operation {
         case .Append(let boxedValue):
             _elements.append(boxedValue.value)
-            _mutableCount.put(_elements.count)
         case .Extend(let boxedValues):
             _elements.extend(boxedValues.value)
-            _mutableCount.put(_elements.count)
+        case .Insert(let boxedValue, let index):
+            _elements.insert(boxedValue.value, atIndex: index)
         case .Replace(let boxedValue, let index):
             _elements[index] = boxedValue.value
-            _mutableCount.put(_elements.count)
         case .RemoveElement(let index):
             _elements.removeAtIndex(index)
-            _mutableCount.put(_elements.count)
         case .ReplaceAll(let boxedValues):
             _elements = boxedValues.value
-            _mutableCount.put(_elements.count)
         case .RemoveAll(let keepCapacity):
             _elements.removeAll(keepCapacity: keepCapacity)
-            _mutableCount.put(_elements.count)
         }
+        
+        _mutableCount.put(_elements.count)
     }
     
 }

@@ -48,6 +48,22 @@ class OperationSpec: QuickSpec {
                 }
             }
             
+            context("when the operation is an `Insert` operation") {
+                let original = 11
+                let index = 3
+                
+                beforeEach {
+                    operation = Operation.Insert(value: Box(11), atIndex: index)
+                }
+                
+                it("should map the value to be inserted") {
+                    let mappedOperation = operation.map { $0 * 4 }
+                    
+                    let areEqual = mappedOperation == Operation.Insert(value: Box(original * 4), atIndex: index)
+                    expect(areEqual).to(beTrue())
+                }
+            }
+            
             context("when the operation is an `.Replace` operation") {
                 
                 beforeEach {
@@ -120,6 +136,19 @@ class OperationSpec: QuickSpec {
                 }
             }
             
+            context("when the operation is an `Insert` operation") {
+                let data = 12
+                let index = 1
+                
+                beforeEach {
+                    operation = Operation.Insert(value: Box(data), atIndex: index)
+                }
+                
+                it("should return the inserted value") {
+                    expect(operation.value).to(equal(data))
+                }
+            }
+            
             context("when the operation is an `Replace` operation") {
                 let data = 10
                 
@@ -158,7 +187,7 @@ class OperationSpec: QuickSpec {
                 
             }
             
-            context("when the operation is an RemoveAll operation") {
+            context("when the operation is an `RemoveAll` operation") {
                 
                 beforeEach {
                     operation = Operation.RemoveAll(keepCapacity: true)
@@ -198,6 +227,20 @@ class OperationSpec: QuickSpec {
                 
                 it("returns the value that's going to replace all") {
                     expect(operation.arrayValue).to(equal(array))
+                }
+            }
+            
+            context("when the operation is an `Insert` operation") {
+                
+                let data = 12
+                let index = 1
+                
+                beforeEach {
+                    operation = Operation.Insert(value: Box(data), atIndex: index)
+                }
+                
+                it("returns .None") {
+                    expect(operation.arrayValue).to(beNil())
                 }
             }
             

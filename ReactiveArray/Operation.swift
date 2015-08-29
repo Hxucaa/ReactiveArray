@@ -13,6 +13,7 @@ public enum Operation<T>: DebugPrintable {
     
     case Append(value: Box<T>)
     case Extend(values: Box<[T]>)
+    case Insert(value: Box<T>, atIndex: Int)
     case Replace(value: Box<T>, atIndex: Int)
     case RemoveElement(atIndex: Int)
     case ReplaceAll(values: Box<[T]>)
@@ -24,14 +25,16 @@ public enum Operation<T>: DebugPrintable {
             return Operation<U>.Append(value: Box(mapper(boxedValue.value)))
         case .Extend(let boxedValues):
             return Operation<U>.Extend(values: Box(boxedValues.value.map { mapper($0) }))
+        case let .Insert(boxedValue, index):
+            return Operation<U>.Insert(value: Box(mapper(boxedValue.value)), atIndex: index)
         case .Replace(let boxedValue, let index):
             return Operation<U>.Replace(value: Box(mapper(boxedValue.value)), atIndex: index)
         case .RemoveElement(let index):
             return Operation<U>.RemoveElement(atIndex: index)
         case .ReplaceAll(let boxedValues):
             return Operation<U>.ReplaceAll(values: Box(boxedValues.value.map { mapper($0) }))
-        default:
-            fatalError("The operator cannot be mapped.")
+        case let .RemoveAll(keepCapacity):
+            return Operation<U>.RemoveAll(keepCapacity: keepCapacity)
         }
     }
     
@@ -42,6 +45,8 @@ public enum Operation<T>: DebugPrintable {
             description = ".Append(value:\(boxedValue.value))"
         case .Extend(let boxedValues):
             description = ".Extend(values:\(boxedValues.value))"
+        case let .Insert(boxedValue, index):
+            description = ".Insert(value:\(boxedValue.value), atIndex:\(index))"
         case .Replace(let boxedValue, let index):
             description = ".Replace(value: \(boxedValue.value), atIndex:\(index))"
         case .RemoveElement(let index):
@@ -59,6 +64,8 @@ public enum Operation<T>: DebugPrintable {
         case .Append(let boxedValue):
             return boxedValue.value
         case .Replace(let boxedValue, let index):
+            return boxedValue.value
+        case let .Insert(boxedValue, index):
             return boxedValue.value
         default:
             return Optional.None
@@ -86,6 +93,8 @@ public func ==<T: Equatable>(lhs: Operation<T>, rhs: Operation<T>) -> Bool {
         return leftBoxedValue.value == rightBoxedValue.value
     case (.Extend(let leftBoxedValues), .Extend(let rightBoxedValues)):
         return leftBoxedValues.value == rightBoxedValues.value
+    case (.Insert(let leftBoxedValue, let leftIndex), .Insert(let rightBoxedValue, let rightIndex)):
+        return leftIndex == rightIndex && leftBoxedValue.value == rightBoxedValue.value
     case (.Replace(let leftBoxedValue, let leftIndex), .Replace(let rightBoxedValue, let rightIndex)):
         return leftIndex == rightIndex && leftBoxedValue.value == rightBoxedValue.value
     case (.RemoveElement(let leftIndex), .RemoveElement(let rightIndex)):
