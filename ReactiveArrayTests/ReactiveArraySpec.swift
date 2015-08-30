@@ -15,6 +15,9 @@ import Box
 private func waitForOperation<T>(
     fromProducer producer: SignalProducer<Operation<T>, NoError>,
     #when: () -> (),
+    onInitiate: Box<[T]> -> () = {
+        fail("Invalid operation type: .Initiate(\($0))")
+    },
     onAppend: Box<T> -> () = {
         fail("Invalid operation type: .Append(\($0))")
     },
@@ -41,6 +44,8 @@ private func waitForOperation<T>(
         waitUntil { done in
             producer |> start(next: { operation in
                 switch operation {
+                case let .Initiate(boxedValues):
+                    onInitiate(boxedValues)
                 case let .Append(boxedValue):
                     onAppend(boxedValue)
                 case let .Extend(boxedValues):
@@ -66,6 +71,9 @@ private func waitForOperation<T>(
 private func waitForOperation<T>(
     fromSignal signal: Signal<Operation<T>, NoError>,
     #when: () -> (),
+    onInitiate: Box<[T]> -> () = {
+        fail("Invalid operation type: .Initiate(\($0))")
+    },
     onAppend: Box<T> -> () = {
         fail("Invalid operation type: .Append(\($0))")
     },
@@ -90,12 +98,15 @@ private func waitForOperation<T>(
     ) {
         
         let producer = SignalProducer<Operation<T>, NoError> { (observer, disposable) in signal.observe(observer) }
-        waitForOperation(fromProducer: producer, when: when, onAppend: onAppend, onExtend: onExtend, onInsert: onInsert, onReplace: onReplace, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
+        waitForOperation(fromProducer: producer, when: when, onInitiate: onInitiate, onAppend: onAppend, onExtend: onExtend, onInsert: onInsert, onReplace: onReplace, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
 }
 
 private func waitForOperation<T>(
     fromArray array: ReactiveArray<T>,
     #when: () -> (),
+    onInitiate: Box<[T]> -> () = {
+        fail("Invalid operation type: .Initiate(\($0))")
+    },
     onAppend: Box<T> -> () = {
         fail("Invalid operation type: .Append(\($0))")
     },
@@ -119,7 +130,7 @@ private func waitForOperation<T>(
     }
     ) {
         
-        waitForOperation(fromSignal: array.signal, when: when, onAppend: onAppend, onExtend: onExtend, onInsert: onInsert, onReplace: onReplace, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
+        waitForOperation(fromSignal: array.signal, when: when, onInitiate: onInitiate, onAppend: onAppend, onExtend: onExtend, onInsert: onInsert, onReplace: onReplace, onDelete: onDelete, onReplaceAll: onReplaceAll, onRemoveAll: onRemoveAll)
 }
 
 class ReactiveArraySpec: QuickSpec {
@@ -549,26 +560,24 @@ class ReactiveArraySpec: QuickSpec {
         describe("#producer") {
             
             var a: ReactiveArray<Int>!
+            let orignalDataArray = [3,5,76,3,6,4,6]
             
             beforeEach {
-                a = ReactiveArray(elements: [3,5,76,3,6,4,6])
+                a = ReactiveArray(elements: orignalDataArray)
             }
             
             context("when the array has elements") {
                 
-                it("signals an append operation for each stored element") {
+                it("signals an `Initiate` operation for each stored element") {
                     waitUntil { done in
                         // This is needed to avoid a compiler error.
                         // Probably a Swift bug
                         // TODO: Check is this is still necessary in Swift 2.0
                         let internalDone = done
                         
-                        reactiveArray.producer
-                            |> take(reactiveArray.count)
-                            |> collect
-                            |> start(next: { operations in
-                                let expectedOperations: [Operation<Int>] = map(reactiveArray) { Operation.Append(value: Box($0)) }
-                                let result = operations == expectedOperations
+                        a.producer
+                            |> start(next: { operation in
+                                let result = operation == Operation.Initiate(values: Box(orignalDataArray))
                                 expect(result).to(beTrue())
                                 internalDone()
                             })
@@ -582,7 +591,7 @@ class ReactiveArraySpec: QuickSpec {
                 it("forwards the operation") {
                     
                     waitForOperation(
-                        fromProducer: a.producer |> skip(a.count),
+                        fromProducer: a.producer |> skip(1),
                         when: {
                             a.append(5)
                         },
@@ -600,7 +609,7 @@ class ReactiveArraySpec: QuickSpec {
                     let newElements = [1,2,3,4,5]
                     
                     waitForOperation(
-                        fromProducer: a.producer |> skip(a.count),  // skip the `Append` operations happened when the array is initialized.
+                        fromProducer: a.producer |> skip(1),  // skip the `Initiate` operations happened when the array is initialized.
                         when: {
                             a.extend(newElements)
                         },
@@ -618,7 +627,7 @@ class ReactiveArraySpec: QuickSpec {
                     let index = 4
                     
                     waitForOperation(
-                        fromProducer: a.producer |> skip(a.count),  // skip the `Append` operations happened when the array is initialized.
+                        fromProducer: a.producer |> skip(1),  // skip the `Initiate` operations happened when the array is initialized.
                         when: {
                             a.insert(newElement, atIndex: index)
                         },
@@ -634,7 +643,7 @@ class ReactiveArraySpec: QuickSpec {
                 
                 it("forwards the operation") {
                     waitForOperation(
-                        fromProducer: a.producer |> skip(a.count), // Skips the operation triggered due to the array not being empty
+                        fromProducer: a.producer |> skip(1), // Skips the operation triggered due to the array not being empty
                         when: {
                             a.replace(5, atIndex: 0)
                         },
@@ -651,7 +660,7 @@ class ReactiveArraySpec: QuickSpec {
                 
                 it("forwards the operation") {
                     waitForOperation(
-                        fromProducer: a.producer |> skip(a.count), // Skips the operation triggered due to the array not being empty
+                        fromProducer: a.producer |> skip(1), // Skips the operation triggered due to the array not being empty
                         when: {
                             a.removeAtIndex(0)
                         },
@@ -669,7 +678,7 @@ class ReactiveArraySpec: QuickSpec {
                     let newElements = [1,2,3,4,5]
                     
                     waitForOperation(
-                        fromProducer: a.producer |> skip(a.count),
+                        fromProducer: a.producer |> skip(1),
                         when: {
                             a.replaceAll(newElements)
                         },
@@ -685,7 +694,7 @@ class ReactiveArraySpec: QuickSpec {
                 it("forwards the operation") {
                     let keep = true
                     waitForOperation(
-                        fromProducer: a.producer |> skip(a.count),
+                        fromProducer: a.producer |> skip(1),
                         when: {
                             a.removeAll(keep)
                         },

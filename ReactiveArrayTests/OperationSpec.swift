@@ -20,6 +20,21 @@ class OperationSpec: QuickSpec {
         
         describe("#map") {
             
+            context("when the operation is an `Initiate` operation") {
+                let data = [10, 20, 30]
+                beforeEach {
+                    operation = Operation.Initiate(values: Box(data))
+                }
+                
+                it("maps the value to be initiated") {
+                    let mappedOperation = operation.map { $0 * 2 }
+                    
+                    let areEqual = mappedOperation == Operation.Initiate(values: Box(data.map { $0 * 2}))
+                    expect(areEqual).to(beTrue())
+                }
+                
+            }
+            
             context("when the operation is an `Append` operation") {
                 
                 beforeEach {
@@ -110,6 +125,17 @@ class OperationSpec: QuickSpec {
         }
         
         describe("#value") {
+            
+            context("when the operation is an `Initiate` operation") {
+                let array = [1,2,3,4,5]
+                beforeEach {
+                    operation = Operation.Initiate(values: Box(array))
+                }
+                
+                it("returns .None") {
+                    expect(operation.value).to(beNil())
+                }
+            }
         
             context("when the operation is an `Append` operation") {
                 
@@ -202,6 +228,19 @@ class OperationSpec: QuickSpec {
         }
         
         describe("#arrayValue") {
+            
+            context("when the operation is an `Initiate` operation") {
+                
+                let array = [1,2,3,4,5]
+                
+                beforeEach {
+                    operation = Operation.Initiate(values: Box(array))
+                }
+                
+                it("returns the value that's going to replace all") {
+                    expect(operation.arrayValue).to(equal(array))
+                }
+            }
             
             context("when the operation is an `Append` operation") {
                 
