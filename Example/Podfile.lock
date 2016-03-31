@@ -1,0 +1,38 @@
+PODS:
+  - Nimble (3.2.0)
+  - Quick (0.9.1)
+  - ReactiveArray (0.3.0):
+    - ReactiveCocoa (~> 4.1.0)
+  - ReactiveCocoa (4.1.0):
+    - ReactiveCocoa/UI (= 4.1.0)
+    - Result (~> 2.0)
+  - ReactiveCocoa/Core (4.1.0):
+    - ReactiveCocoa/no-arc
+    - Result (~> 2.0)
+  - ReactiveCocoa/no-arc (4.1.0):
+    - Result (~> 2.0)
+  - ReactiveCocoa/UI (4.1.0):
+    - ReactiveCocoa/Core
+    - Result (~> 2.0)
+  - Result (2.0.0)
+
+DEPENDENCIES:
+  - Nimble (~> 3.2.0)
+  - Quick (~> 0.9.0)
+  - ReactiveArray (from `../`)
+  - ReactiveCocoa (~> 4.1.0)
+
+EXTERNAL SOURCES:
+  ReactiveArray:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  Nimble: 703854335d181df169bbca9c97117b5cf8c47c1d
+  Quick: a5221fc21788b6aeda934805e68b061839bc3165
+  ReactiveArray: 84306dc1c30dc95f3c9e846b2a51b8ae08a3f3de
+  ReactiveCocoa: d70004d7a366a7b8e87e60ce2347182c77701949
+  Result: 9e75e1111c774c6ac594e14907b15057053a7959
+
+PODFILE CHECKSUM: f94dfe481809fe3d5a3c2a14d5a6371b8ee082c9
+
+COCOAPODS: 1.0.0.beta.6
